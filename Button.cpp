@@ -45,6 +45,7 @@ Button::Button(uint8_t pin, uint8_t puEnable, uint8_t invert, uint32_t dbTime)
     _lastState = _state;
     _changed = 0;
     _lastChange = _time;
+    _intervalStart = _lastChange;
 }
 
 /*----------------------------------------------------------------------*
@@ -70,6 +71,7 @@ uint8_t Button::read(void)
         _time = ms;
         if (_state != _lastState)   {
             _lastChange = ms;
+            _intervalStart = _lastChange;
             _changed = 1;
         }
         else {
@@ -124,6 +126,36 @@ uint8_t Button::pressedFor(uint32_t ms)
 uint8_t Button::releasedFor(uint32_t ms)
 {
     return (_state == 0 && _time - _lastChange >= ms) ? 1 : 0;
+}
+
+/*----------------------------------------------------------------------*
+ * wasPressedFor(ms) and wasReleasedFor(ms) are the same as             *
+ * pressedFor(ms) and releasedFor(ms), except that when the button is   *
+ * pressed (or released) for the specified time in milliseconds,        *
+ * instead of repeatedly returning true (1), it returns the value in    *
+ * the time intervals of the specified time in milliseconds.            *
+ * These functions do not cause the button to be read.                  *
+ *----------------------------------------------------------------------*/
+uint8_t Button::wasPressedFor(uint32_t ms)
+{
+    if (_state == 1 && _time - _intervalStart >= ms) {
+        _intervalStart += ms;
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+uint8_t Button::wasReleasedFor(uint32_t ms)
+{
+    if (_state == 0 && _time - _intervalStart >= ms) {
+        _intervalStart += ms;
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 /*----------------------------------------------------------------------*
